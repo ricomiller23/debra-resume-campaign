@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import fs from "fs";
 import path from "path";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: NextRequest) {
     try {
-        const { contactId, to, subject, body, fromName } = await req.json();
+        const { Resend } = await import("resend");
+        const resend = new Resend(process.env.RESEND_API_KEY || "");
+        const { contactId, to, subject, body } = await req.json();
 
         // Load resume PDF
         const resumePath = path.join(process.cwd(), "public", "Debra_Friednash_Resume.pdf");
