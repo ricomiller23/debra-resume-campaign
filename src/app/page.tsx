@@ -56,8 +56,9 @@ export default function HomePage() {
                     showToast(`✓ Email sent to ${contact.name} at ${contact.company}`, "success");
                 } else {
                     setSendStates((s) => ({ ...s, [contact.id]: "error" }));
-                    if (data.error?.message?.includes("API key")) setApiKeyMissing(true);
-                    showToast(`Failed: ${data.error?.message || "Unknown error"}`, "error");
+                    const errMsg: string =
+                        data.error?.message ?? (typeof data.error === "string" ? data.error : "Unknown error");
+                    showToast(`Failed: ${errMsg}`, "error");
                 }
             } catch {
                 setSendStates((s) => ({ ...s, [contact.id]: "error" }));

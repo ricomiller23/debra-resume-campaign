@@ -3,15 +3,18 @@ import nodemailer from "nodemailer";
 import path from "path";
 import fs from "fs";
 
+function err(message: string, status = 500) {
+    return NextResponse.json({ success: false, error: { message } }, { status });
+}
+
 export async function POST(req: NextRequest) {
     try {
         const { contactId, to, subject, body } = await req.json();
 
         const appPassword = process.env.ICLOUD_APP_PASSWORD;
         if (!appPassword) {
-            return NextResponse.json(
-                { success: false, error: "ICLOUD_APP_PASSWORD env var not set. Generate one at appleid.apple.com → Sign-In and Security → App-Specific Passwords." },
-                { status: 500 }
+            return err(
+                "ICLOUD_APP_PASSWORD is not set. Go to appleid.apple.com → Sign-In and Security → App-Specific Passwords and add it as an environment variable."
             );
         }
 
@@ -28,15 +31,15 @@ export async function POST(req: NextRequest) {
             attachments.push({ filename: `Cover_Letter_${contactId}.pdf`, content: fs.readFileSync(coverPath) });
         }
 
-        // iCloud SMTP transport
+        // iCloud SMTP — works from Vercel and local
         const transporter = nodemailer.createTransport({
             host: "smtp.mail.me.com",
             port: 587,
-            secure: false,        // STARTTLS
+            secure: false,
             requireTLS: true,
             auth: {
                 user: "ricomiller@icloud.com",
-                pass: appPassword,  // app-specific password from appleid.apple.com
+                pass: appPassword,
             },
         });
 
@@ -50,9 +53,9 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json({ success: true });
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
         console.error("iCloud SMTP error:", message);
-        return NextResponse.json({ success: false, error: message }, { status: 500 });
+        return err(message);
     }
 }

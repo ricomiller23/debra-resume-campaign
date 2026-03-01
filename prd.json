@@ -1,0 +1,18 @@
+{
+    "project": "debra-resume-campaign",
+    "description": "Email campaign app for Debra Friednash — sends personalized cover letters via iCloud SMTP",
+    "stories": [
+        {
+            "id": 1,
+            "title": "Fix unknown error on email send",
+            "description": "The send button shows 'Unknown error' because: (1) the API route returns error as a plain string but the UI reads data.error?.message, and (2) the Next.js dev server needs restarting to pick up ICLOUD_APP_PASSWORD from .env.local. Fix error serialization in the API route and error display in the UI so the real error is always shown.",
+            "acceptance": [
+                "API route returns { success: false, error: { message: string } } consistently",
+                "UI displays the actual error string from the API, not 'Unknown error'",
+                "npm run build passes with no TypeScript errors",
+                "Dev server is restarted and ICLOUD_APP_PASSWORD is loaded"
+            ],
+            "status": "in_progress"
+        }
+    ]
+}
