@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
     CONTACTS,
     Contact,
@@ -19,6 +19,33 @@ export default function HomePage() {
     const [apiKeyMissing, setApiKeyMissing] = useState(false);
     const [filter, setFilter] = useState<"all" | "pending" | "sent">("all");
     const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+    const [isAddingContact, setIsAddingContact] = useState(false);
+    const [newContact, setNewContact] = useState({ name: "", title: "", company: "", email: "", salutation: "" });
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        const stored = localStorage.getItem("debra-campaign-contacts");
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (parsed.length > 0) {
+                    setContacts(parsed);
+                    setSelected(parsed[0]);
+                }
+            } catch (e) {
+                console.error("Failed to parse contacts from localStorage", e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (mounted && contacts !== CONTACTS) {
+            localStorage.setItem("debra-campaign-contacts", JSON.stringify(contacts));
+        }
+    }, [contacts, mounted]);
 
     const filteredContacts = contacts.filter((c) => {
         if (filter === "all") return true;
@@ -42,6 +69,10 @@ export default function HomePage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contactId: contact.id,
+                        name: contact.name,
+                        title: contact.title,
+                        company: contact.company,
+                        salutation: contact.salutation,
                         to: contact.email,
                         subject: buildSubjectLine(contact),
                         body: buildEmailBody(contact),
@@ -67,6 +98,47 @@ export default function HomePage() {
         },
         []
     );
+
+    const handleAddContact = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsGenerating(true);
+        try {
+            const res = await fetch("/api/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    company: newContact.company,
+                    name: newContact.name,
+                    title: newContact.title,
+                }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                const generatedContact: Contact = {
+                    id: newContact.company.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4),
+                    name: newContact.name,
+                    title: newContact.title,
+                    company: newContact.company,
+                    email: newContact.email,
+                    salutation: newContact.salutation,
+                    coverLetter: data.body,
+                    status: "pending",
+                };
+                setContacts((prev) => [generatedContact, ...prev]);
+                setSelected(generatedContact);
+                setIsAddingContact(false);
+                setNewContact({ name: "", title: "", company: "", email: "", salutation: "" });
+                showToast("✨ Cover letter generated successfully!", "success");
+            } else {
+                showToast(`Generation failed: ${data.error}`, "error");
+            }
+        } catch (err) {
+            showToast("Network error during generation.", "error");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const subjectLine = buildSubjectLine(selected);
     const emailBody = buildEmailBody(selected);
@@ -119,19 +191,30 @@ export default function HomePage() {
                     }}
                 >
                     {/* Filters */}
-                    <div className="p-4 flex gap-2 border-b" style={{ borderColor: "var(--glass-border)" }}>
-                        {(["all", "pending", "sent"] as const).map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filter === f
-                                    ? "bg-white text-navy-900 shadow-lg shadow-white/10"
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                                    }`}
-                            >
-                                {f.toUpperCase()}
-                            </button>
-                        ))}
+                    <div className="p-4 flex items-center justify-between gap-2 border-b" style={{ borderColor: "var(--glass-border)" }}>
+                        <div className="flex gap-2">
+                            {(["all", "pending", "sent"] as const).map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filter === f
+                                        ? "bg-white text-navy-900 shadow-lg shadow-white/10"
+                                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                                        }`}
+                                >
+                                    {f.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setIsAddingContact(true)}
+                            className="p-1.5 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 transition-colors border border-indigo-500/20"
+                            title="Add Contact"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
                     </div>
 
                     {/* Contact List */}
@@ -249,6 +332,83 @@ export default function HomePage() {
                     </div>
                 </main>
             </div>
+
+            {/* ── Add Contact Modal ─────────────────────────────────── */}
+            {isAddingContact && (
+                <div className="modal-overlay" onClick={() => !isGenerating && setIsAddingContact(false)}>
+                    <div
+                        className="glass-card p-8 max-w-xl w-full mx-4"
+                        style={{ background: "var(--navy-800)", border: "1px solid rgba(139,92,246,0.4)" }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-lg"
+                                style={{ background: "linear-gradient(135deg, #10b981, #3b82f6)" }}>
+                                🤖
+                            </div>
+                            <h2 className="text-xl font-bold text-white">
+                                {isGenerating ? "Researching & Drafting..." : "New Outreach Target"}
+                            </h2>
+                        </div>
+
+                        {isGenerating ? (
+                            <div className="flex flex-col items-center justify-center py-10 space-y-6">
+                                <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <p className="text-slate-300 text-center animate-pulse">
+                                    Writing a personalized cover letter to<br />
+                                    <strong>{newContact.name}</strong> at <strong>{newContact.company}</strong>...
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleAddContact} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Company</label>
+                                        <input required type="text" value={newContact.company} onChange={(e) => setNewContact({ ...newContact, company: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. JPMorgan Chase" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Executive Name</label>
+                                        <input required type="text" value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. John Fetherston" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Executive Title</label>
+                                        <input required type="text" value={newContact.title} onChange={(e) => setNewContact({ ...newContact, title: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. VP, Gov Relations" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Salutation</label>
+                                        <input required type="text" value={newContact.salutation} onChange={(e) => setNewContact({ ...newContact, salutation: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. Mr. Fetherston" />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Email Address</label>
+                                        <input required type="email" value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. john.fetherston@jpmchase.com" />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4 mt-6 border-t border-white/10">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-3 rounded-xl bg-indigo-500 text-white font-bold hover:bg-indigo-400 transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                                    >
+                                        ✨ GENERATE DRAFT
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingContact(false)}
+                                        className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold hover:bg-white/5 transition-all"
+                                    >
+                                        CANCEL
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ── Send Confirmation Modal ────────────────────────────── */}
             {modalContact && (
