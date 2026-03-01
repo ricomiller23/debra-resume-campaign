@@ -1,56 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
+import { exec } from "child_process";
+import { promisify } from "util";
 import path from "path";
+import fs from "fs";
+import os from "os";
+
+const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
     try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY || "");
         const { contactId, to, subject, body } = await req.json();
 
-        // Load resume PDF
         const resumePath = path.join(process.cwd(), "public", "Debra_Friednash_Resume.pdf");
-        let resumeBuffer: Buffer | null = null;
-        if (fs.existsSync(resumePath)) {
-            resumeBuffer = fs.readFileSync(resumePath);
-        }
-
-        // Load cover letter PDF if generated
         const coverPath = path.join(process.cwd(), "public", "covers", `${contactId}.pdf`);
-        let coverBuffer: Buffer | null = null;
-        if (fs.existsSync(coverPath)) {
-            coverBuffer = fs.readFileSync(coverPath);
+
+        const hasResume = fs.existsSync(resumePath);
+        const hasCover = fs.existsSync(coverPath);
+
+        // Build attachment lines for AppleScript
+        const attachLines: string[] = [];
+        if (hasResume) attachLines.push(
+            `make new attachment with properties {file name:POSIX file "${resumePath}"} at after the last paragraph`
+        );
+        if (hasCover) attachLines.push(
+            `make new attachment with properties {file name:POSIX file "${coverPath}"} at after the last paragraph`
+        );
+
+        // Escape for AppleScript string literals (double quotes and backslashes)
+        const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+        const script = `
+tell application "Mail"
+  set theMsg to make new outgoing message with properties {sender:"Debra L. Friednash <ricomiller@icloud.com>", subject:"${esc(subject)}", content:"${esc(body)}", visible:false}
+  tell theMsg
+    make new to recipient with properties {address:"${esc(to)}"}
+    ${attachLines.join("\n    ")}
+  end tell
+  send theMsg
+end tell
+`.trim();
+
+        // Write to temp .scpt file to avoid shell quoting issues
+        const tmpFile = path.join(os.tmpdir(), `debra-send-${Date.now()}.applescript`);
+        fs.writeFileSync(tmpFile, script, "utf8");
+
+        try {
+            const { stderr } = await execAsync(`osascript "${tmpFile}"`);
+            if (stderr?.trim()) console.warn("AppleScript warning:", stderr.trim());
+        } finally {
+            fs.unlinkSync(tmpFile); // cleanup
         }
 
-        const attachments = [];
-        if (resumeBuffer) {
-            attachments.push({
-                filename: "Debra_Friednash_Resume.pdf",
-                content: resumeBuffer,
-            });
-        }
-        if (coverBuffer) {
-            attachments.push({
-                filename: `Cover_Letter_${contactId}.pdf`,
-                content: coverBuffer,
-            });
-        }
-
-        const { data, error } = await resend.emails.send({
-            from: `Debra L. Friednash <ricomiller@icloud.com>`,
-            reply_to: "denvertrad@aol.com",
-            to: [to],
-            subject,
-            text: body,
-            attachments: attachments as never,
-        });
-
-        if (error) {
-            return NextResponse.json({ success: false, error }, { status: 400 });
-        }
-
-        return NextResponse.json({ success: true, data });
-    } catch (err) {
-        return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+        return NextResponse.json({ success: true });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Send error:", message);
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

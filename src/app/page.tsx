@@ -124,8 +124,8 @@ export default function HomePage() {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filter === f
-                                        ? "bg-white text-navy-900 shadow-lg shadow-white/10"
-                                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    ? "bg-white text-navy-900 shadow-lg shadow-white/10"
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
                                     }`}
                             >
                                 {f.toUpperCase()}
@@ -229,9 +229,9 @@ export default function HomePage() {
                                 {[
                                     ["To", `${selected.name} <${selected.email}>`],
                                     ["From", "Debra L. Friednash <ricomiller@icloud.com>"],
-                                    ["BCC", BCC_EMAIL],
+                                    ["Reply-To", "denvertrad@aol.com"],
                                     ["Subject", subjectLine],
-                                    ["Attachments", "Debra_Friednash_Resume.pdf · Cover_Letter.pdf"],
+                                    ["Attach", "Resume.pdf + Cover_Letter.pdf"],
                                 ].map(([label, val]) => (
                                     <div key={label} className="flex gap-2">
                                         <span className="shrink-0 font-semibold" style={{ color: "#64748b", width: "80px" }}>{label}:</span>
@@ -269,7 +269,7 @@ export default function HomePage() {
                             You are about to send a confidential email and PDF cover letter to{" "}
                             <span className="text-white font-semibold">{modalContact.name}</span> at{" "}
                             <span className="text-white font-semibold">{modalContact.company}</span>.
-                            A copy will be BCC'd to <span className="text-indigo-400 underline">{BCC_EMAIL}</span>.
+                            Sending via Apple Mail from <span className="text-white font-semibold">ricomiller@icloud.com</span>. Replies will go to <span className="text-indigo-400">denvertrad@aol.com</span>.
                         </p>
 
                         <div className="flex gap-4">
@@ -302,8 +302,8 @@ export default function HomePage() {
             {toast && (
                 <div
                     className={`fixed top-6 right-6 px-6 py-3 rounded-xl shadow-2xl transition-all animate-in slide-in-from-right font-medium ${toast.type === "success"
-                            ? "bg-emerald-500 text-white"
-                            : "bg-red-500 text-white"
+                        ? "bg-emerald-500 text-white"
+                        : "bg-red-500 text-white"
                         }`}
                 >
                     {toast.msg}
