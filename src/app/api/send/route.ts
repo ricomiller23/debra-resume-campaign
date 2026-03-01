@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
             requireTLS: true,
             auth: {
                 user: "ricomiller@icloud.com",
-                pass: appPassword,
+                pass: appPassword.trim(),
             },
         });
 

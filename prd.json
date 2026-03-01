@@ -12,7 +12,7 @@
                 "npm run build passes with no TypeScript errors",
                 "Dev server is restarted and ICLOUD_APP_PASSWORD is loaded"
             ],
-            "status": "in_progress"
+            "status": "done"
         }
     ]
 }
