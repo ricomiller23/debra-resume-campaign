@@ -123,11 +123,10 @@ export default function HomePage() {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                                    filter === f
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filter === f
                                         ? "bg-white text-navy-900 shadow-lg shadow-white/10"
                                         : "text-slate-400 hover:text-white hover:bg-white/5"
-                                }`}
+                                    }`}
                             >
                                 {f.toUpperCase()}
                             </button>
@@ -144,9 +143,8 @@ export default function HomePage() {
                                 <div
                                     key={c.id}
                                     onClick={() => setSelected(c)}
-                                    className={`p-4 border-b cursor-pointer transition-all group ${
-                                        isActive ? "bg-white/5" : "hover:bg-white/5"
-                                    }`}
+                                    className={`p-4 border-b cursor-pointer transition-all group ${isActive ? "bg-white/5" : "hover:bg-white/5"
+                                        }`}
                                     style={{ borderColor: "rgba(255,255,255,0.05)" }}
                                 >
                                     <div className="flex items-start justify-between mb-1">
@@ -160,18 +158,18 @@ export default function HomePage() {
                                                     state === "sent" || state === "confirmed"
                                                         ? "rgba(52,211,153,0.1)"
                                                         : state === "sending"
-                                                        ? "rgba(59,130,246,0.1)"
-                                                        : state === "error"
-                                                        ? "rgba(239,68,68,0.1)"
-                                                        : "rgba(255,255,255,0.05)",
+                                                            ? "rgba(59,130,246,0.1)"
+                                                            : state === "error"
+                                                                ? "rgba(239,68,68,0.1)"
+                                                                : "rgba(255,255,255,0.05)",
                                                 color:
                                                     state === "sent" || state === "confirmed"
                                                         ? "#34d399"
                                                         : state === "sending"
-                                                        ? "#3b82f6"
-                                                        : state === "error"
-                                                        ? "#ef4444"
-                                                        : "#64748b",
+                                                            ? "#3b82f6"
+                                                            : state === "error"
+                                                                ? "#ef4444"
+                                                                : "#64748b",
                                             }}
                                         >
                                             {state.toUpperCase()}
@@ -230,7 +228,7 @@ export default function HomePage() {
                             <div className="mb-8 pb-6 border-b border-white/5 space-y-3">
                                 {[
                                     ["To", `${selected.name} <${selected.email}>`],
-                                    ["From", "Debra L. Friednash <denvertrad@aol.com>"],
+                                    ["From", "Debra L. Friednash <ricomiller@icloud.com>"],
                                     ["BCC", BCC_EMAIL],
                                     ["Subject", subjectLine],
                                     ["Attachments", "Debra_Friednash_Resume.pdf · Cover_Letter.pdf"],
@@ -303,11 +301,10 @@ export default function HomePage() {
             {/* ── Toast ──────────────────────────────────────────────── */}
             {toast && (
                 <div
-                    className={`fixed top-6 right-6 px-6 py-3 rounded-xl shadow-2xl transition-all animate-in slide-in-from-right font-medium ${
-                        toast.type === "success"
+                    className={`fixed top-6 right-6 px-6 py-3 rounded-xl shadow-2xl transition-all animate-in slide-in-from-right font-medium ${toast.type === "success"
                             ? "bg-emerald-500 text-white"
                             : "bg-red-500 text-white"
-                    }`}
+                        }`}
                 >
                     {toast.msg}
                 </div>

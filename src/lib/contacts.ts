@@ -19,6 +19,7 @@ Mobile: (480) 717-0553
 Email: denvertrad@aol.com`;
 
 export const DEBRA_EMAIL = "denvertrad@aol.com";
+export const FROM_EMAIL = "ricomiller@icloud.com";
 export const BCC_EMAIL = "ricomiller@icloud.com";
 export const RESUME_FILENAME = "Debra_Friednash_Resume.pdf";
 

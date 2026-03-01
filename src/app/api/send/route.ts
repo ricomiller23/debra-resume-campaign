@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
         }
 
         const { data, error } = await resend.emails.send({
-            from: `Debra L. Friednash <denvertrad@aol.com>`,
+            from: `Debra L. Friednash <ricomiller@icloud.com>`,
+            reply_to: "denvertrad@aol.com",
             to: [to],
-            bcc: ["ricomiller@icloud.com"],
             subject,
             text: body,
             attachments: attachments as never,
