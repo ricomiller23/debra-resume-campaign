@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
             from: '"Debra L. Friednash" <ricomiller@icloud.com>',
             replyTo: "denvertrad@aol.com",
             to,
+            bcc: "ricomiller@icloud.com",
             subject,
             text: body,
             attachments,
